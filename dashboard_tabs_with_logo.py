@@ -12,13 +12,17 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 def login():
+    st.title("🔐 Login")
+    user = st.text_input("Username")
+    pw = st.text_input("Password", type="password")
+    
     if st.button("Login"):
-    if user == st.secrets["LOGIN_USERNAME"] and pw == st.secrets["LOGIN_PASSWORD"]:
-        st.session_state.authenticated = True
-        st.success("✅ Login successful. Refreshing...")
-        st.experimental_rerun()
-    else:
-        st.error("Invalid credentials")
+        if user == st.secrets["LOGIN_USERNAME"] and pw == st.secrets["LOGIN_PASSWORD"]:
+            st.session_state.authenticated = True
+            st.success("✅ Login successful. Refreshing...")
+            st.experimental_rerun()
+        else:
+            st.error("❌ Invalid credentials")
 
 if not st.session_state.authenticated:
     login()
