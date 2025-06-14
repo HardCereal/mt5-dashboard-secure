@@ -38,3 +38,61 @@ with tab1:
         fig.update_layout(title="Live Equity Curve", xaxis_title="Time", yaxis_title="Equity")
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(df.tail(20))
+with tab2:
+    st.header("🧪 Backtest Explorer")
+    backtest_files = sorted(glob.glob("backtests/*.csv"))
+    selected = st.selectbox("Choose a backtest", backtest_files)
+    if selected:
+        df = load_file(selected)
+        df["equity"] = df["pnl"].cumsum()
+        st.subheader(f"Equity Curve: {os.path.basename(selected)}")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df["timestamp"], y=df["equity"], mode="lines"))
+        fig.update_layout(title="Backtest Equity", xaxis_title="Time", yaxis_title="Equity")
+        st.plotly_chart(fig, use_container_width=True)
+        st.dataframe(df.tail(20))
+
+with tab3:
+    st.header("📈 Strategy Comparison Dashboard")
+    dfs = load_backtests()
+    if not dfs:
+        st.warning("No backtest data found.")
+        st.stop()
+
+    combined = pd.concat(dfs.values(), keys=dfs.keys(), names=["strategy"])
+    combined = combined.reset_index(level=0)
+    combined["win"] = combined["pnl"] > 0
+    combined["month"] = combined["timestamp"].dt.to_period("M").astype(str)
+    combined["date"] = combined["timestamp"].dt.date
+
+    # 📉 Win Rate Trend
+    st.subheader("📉 Win Rate Trend (Monthly)")
+    win_rate = combined.groupby(["strategy", "month"])["win"].mean().reset_index()
+    win_rate["win"] = (win_rate["win"] * 100).round(1)
+
+    for strat in win_rate["strategy"].unique():
+        subset = win_rate[win_rate["strategy"] == strat]
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=subset["month"], y=subset["win"], mode="lines+markers", name=strat))
+        fig.update_layout(title=f"{strat.upper()} Win Rate", yaxis_title="% Wins", height=300)
+        st.plotly_chart(fig, use_container_width=True)
+
+    # 📊 Daily PnL
+    st.subheader("📊 Daily PnL (Bar Chart)")
+    daily_pnl = combined.groupby(["strategy", "date"])["pnl"].sum().reset_index()
+    for strat in daily_pnl["strategy"].unique():
+        dfp = daily_pnl[daily_pnl["strategy"] == strat]
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=dfp["date"], y=dfp["pnl"], name=strat))
+        fig.update_layout(title=f"{strat.upper()} Daily PnL", yaxis_title="PnL", height=300)
+        st.plotly_chart(fig, use_container_width=True)
+
+    # 📍 Equity Curve Overlay
+    st.subheader("📍 Multi-Strategy Equity Overlay")
+    fig = go.Figure()
+    for strat, df in dfs.items():
+        df = df.sort_values("timestamp")
+        df["equity"] = df["pnl"].cumsum()
+        fig.add_trace(go.Scatter(x=df["timestamp"], y=df["equity"], mode="lines", name=strat))
+    fig.update_layout(title="Equity Comparison", xaxis_title="Time", yaxis_title="Equity")
+    st.plotly_chart(fig, use_container_width=True)
