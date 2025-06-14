@@ -1,0 +1,4 @@
+timestamp,symbol,type,volume,price,sl,tp,comment,strategy,pnl
+2025-06-10 09:00:00,EURUSD,buy,0.1,1.0845,1.0795,1.0895,SMA signal,sma,7.50
+2025-06-10 11:00:00,EURUSD,sell,0.1,1.0852,1.0902,1.0802,MACD cross,macd,-3.80
+2025-06-10 13:00:00,EURUSD,buy,0.1,1.0838,1.0788,1.0888,RSI entry,rsi,4.25
