@@ -44,7 +44,10 @@ tabs = st.tabs(["📊 Live", "🧪 Backtests", "📈 Compare"])
 
 # === BACKTEST/LOGIC LOADER (shared) ===
 def load_file(path):
-    return pd.read_csv(path, parse_dates=["timestamp", "close_time"])
+    df = pd.read_csv(path, parse_dates=["timestamp"])
+    if "close_time" in df.columns:
+        df["close_time"] = pd.to_datetime(df["close_time"])
+    return df
 
 def load_files_from_folder(folder="backtests"):
     files = sorted(glob.glob(f"{folder}/*.csv"))
