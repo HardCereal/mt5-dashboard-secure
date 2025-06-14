@@ -4,26 +4,29 @@ import pandas as pd
 import plotly.graph_objs as go
 import os, glob
 from PIL import Image
+import streamlit as st
+import os
 
+# Page config
 st.set_page_config(page_title="📊 MT5 Dashboard", layout="wide")
 
-# === AUTH ===
+# Login state init
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+# Login function
 def login():
     st.title("🔐 Login")
     user = st.text_input("Username")
     pw = st.text_input("Password", type="password")
-    
     if st.button("Login"):
         if user == st.secrets["LOGIN_USERNAME"] and pw == st.secrets["LOGIN_PASSWORD"]:
             st.session_state.authenticated = True
-            st.success("✅ Login successful. Refreshing...")
-            st.experimental_rerun()
+            st.rerun()  # Proper rerun to reload the main app
         else:
-            st.error("❌ Invalid credentials")
+            st.error("Invalid credentials")
 
+# Show login screen if not authenticated
 if not st.session_state.authenticated:
     login()
     st.stop()
