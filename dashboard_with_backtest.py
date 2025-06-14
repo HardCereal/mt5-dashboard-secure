@@ -3,9 +3,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objs as go
 import os, glob
-from dotenv import load_dotenv
-
-load_dotenv()
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -15,7 +12,7 @@ def login():
     user = st.text_input("Username")
     pw = st.text_input("Password", type="password")
     if st.button("Login"):
-        if user == os.getenv("LOGIN_USERNAME") and pw == os.getenv("LOGIN_PASSWORD"):
+        if user == st.secrets["LOGIN_USERNAME"] and pw == st.secrets["LOGIN_PASSWORD"]:
             st.session_state.authenticated = True
             st.success("✅ Login successful.")
             st.stop()
