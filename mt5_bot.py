@@ -154,8 +154,11 @@ def trade():
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 print(f"✅ Trade executed on {symbol} @ {price}")
                 last_trade_time[symbol] = datetime.now()
+                close_price = tp  # In a real bot, this would be filled when the trade closes
                 pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
-                equity += pnl
+                exit_reason = "TP"  # This would be dynamic if monitoring open positions
+                trailing_hit = False  # Replace with logic if tracked
+
                 trade = {
                     "timestamp": datetime.now(),
                     "symbol": symbol,
@@ -166,14 +169,14 @@ def trade():
                     "tp": tp,
                     "comment": "RSI+MACD+SMA",
                     "strategy": "rsi_macd_sma",
-                    "close_price": tp,
+                    "close_price": close_price,
                     "pnl": pnl,
-                    "exit_reason": "TP",  # Or "SL", "trailing"
-                    "trailing_hit": False
+                    "exit_reason": exit_reason,
+                    "trailing_hit": trailing_hit
                 }
                 log_trade(trade)
                 git_push_log()
-                send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f}")
+                send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | Exit: {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}")
             else:
                 print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
         else:
