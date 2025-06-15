@@ -144,7 +144,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
             last_trade_time[symbol] = datetime.now()
             close_price = tp  # Simulated
             pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
-            exit_reason = "TP" if pnl > 0 else "SL"
+            exit_reason = "TP"
             trailing_hit = False
 
             trade = {
@@ -160,7 +160,8 @@ for symbol in ["EURUSD", "GBPUSD"]:
                 "close_price": close_price,
                 "pnl": pnl,
                 "exit_reason": exit_reason,
-                "trailing_hit": trailing_hit
+                "trailing_hit": trailing_hit,
+                "exit_icon": "🏁" if exit_reason == "TP" else "🛑" if exit_reason == "SL" else "🔁"
             }
             log_trade(trade)
             git_push_log()
