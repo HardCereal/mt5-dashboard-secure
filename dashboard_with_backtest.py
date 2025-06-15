@@ -19,7 +19,7 @@ def login():
         if user == st.secrets["LOGIN_USERNAME"] and pw == st.secrets["LOGIN_PASSWORD"]:
             st.session_state.authenticated = True
             st.success("✅ Login successful. Refreshing...")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Invalid credentials")
 
