@@ -22,7 +22,7 @@ def login():
             st.rerun()
         else:
             st.error("Invalid credentials")
-
+            
 if not st.session_state.authenticated:
     login()
     st.stop()
