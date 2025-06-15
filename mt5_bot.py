@@ -154,10 +154,10 @@ def trade():
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 print(f"✅ Trade executed on {symbol} @ {price}")
                 last_trade_time[symbol] = datetime.now()
-                close_price = tp  # In a real bot, this would be filled when the trade closes
+                close_price = tp  # Simulated
                 pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
-                exit_reason = "TP"  # This would be dynamic if monitoring open positions
-                trailing_hit = False  # Replace with logic if tracked
+                exit_reason = "TP"
+                trailing_hit = False
 
                 trade = {
                     "timestamp": datetime.now(),
