@@ -136,7 +136,7 @@ def trade():
             sl = price - 0.001 if action == mt5.ORDER_TYPE_BUY else price + 0.001
             tp = price + 0.002 if action == mt5.ORDER_TYPE_BUY else price - 0.002
 
-            request = {
+            result = mt5.order_send({
                 "action": mt5.TRADE_ACTION_DEAL,
                 "symbol": symbol,
                 "volume": 0.1,
@@ -149,12 +149,13 @@ def trade():
                 "comment": "RSI+MACD+SMA entry",
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_IOC,
-            }
-            result = mt5.order_send(request)
+            })
+
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 print(f"✅ Trade executed on {symbol} @ {price}")
                 last_trade_time[symbol] = datetime.now()
-                equity += tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
+                pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
+                equity += pnl
                 trade = {
                     "timestamp": datetime.now(),
                     "symbol": symbol,
@@ -164,11 +165,15 @@ def trade():
                     "sl": sl,
                     "tp": tp,
                     "comment": "RSI+MACD+SMA",
-                    "strategy": "rsi_macd_sma"
+                    "strategy": "rsi_macd_sma",
+                    "close_price": tp,
+                    "pnl": pnl,
+                    "exit_reason": "TP",  # Or "SL", "trailing"
+                    "trailing_hit": False
                 }
                 log_trade(trade)
                 git_push_log()
-                send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f}")
+                send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f}")
             else:
                 print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
         else:
