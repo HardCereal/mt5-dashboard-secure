@@ -32,7 +32,7 @@ msg.set_content(body)
 msg["Subject"] = subject
 msg["From"] = EMAIL
 msg["To"] = EMAIL
-with smtplib.SMTP("smtp.gmail.com", 587) as server:
+with smtpllib.SMTP("smtp.gmail.com", 587) as server:
 server.starttls()
 server.login(EMAIL, EMAIL_PASS)
 server.send_message(msg)
@@ -147,6 +147,15 @@ for symbol in ["EURUSD", "GBPUSD"]:
             exit_reason = "TP"
             trailing_hit = False
 
+            if exit_reason == "TP":
+                exit_icon = "🏁"
+            elif exit_reason == "SL":
+                exit_icon = "🛑"
+            elif exit_reason == "Trailing":
+                exit_icon = "🔁"
+            else:
+                exit_icon = "❔"
+
             trade = {
                 "timestamp": datetime.now(),
                 "symbol": symbol,
@@ -161,7 +170,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
                 "pnl": pnl,
                 "exit_reason": exit_reason,
                 "trailing_hit": trailing_hit,
-                "exit_icon": "🏁" if exit_reason == "TP" else "🛑" if exit_reason == "SL" else "🔁"
+                "exit_icon": exit_icon
             }
             log_trade(trade)
             git_push_log()
