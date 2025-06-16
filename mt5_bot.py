@@ -130,12 +130,12 @@ for symbol in ["EURUSD", "GBPUSD"]:
         if result.retcode == mt5.TRADE_RETCODE_DONE:
             print(f"✅ Trade executed on {symbol} @ {price}")
             last_trade_time[symbol] = datetime.now()
-            close_price = tp
+            close_price = tp  # Simulated
             pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
             exit_reason = "TP"
             trailing_hit = False
 
-            exit_icon = "🎯" if exit_reason == "TP" else "🛑" if exit_reason == "SL" else "🔄"
+            exit_icon = "🎯" if exit_reason == "TP" else ("🛑" if exit_reason == "SL" else "🔄")
 
             trade = {
                 "timestamp": datetime.now(),
@@ -155,7 +155,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
             }
             log_trade(trade)
             git_push_log()
-            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | Exit: {exit_reason} {exit_icon}")
+            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {exit_icon} {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}")
         else:
             print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
     else:
