@@ -32,7 +32,7 @@ msg.set_content(body)
 msg["Subject"] = subject
 msg["From"] = EMAIL
 msg["To"] = EMAIL
-with smtpllib.SMTP("smtp.gmail.com", 587) as server:
+with smtplib.SMTP("smtp.gmail.com", 587) as server:
 server.starttls()
 server.login(EMAIL, EMAIL_PASS)
 server.send_message(msg)
@@ -115,8 +115,12 @@ for symbol in ["EURUSD", "GBPUSD"]:
     action = None
     if rsi < rsi_threshold and macd > signal and macd_prev < signal_prev and price > sma50:
         action = mt5.ORDER_TYPE_BUY
+        exit_reason = "TP"
+        exit_icon = "🏁"
     elif rsi > 70 and macd < signal and macd_prev > signal_prev and price < sma50:
         action = mt5.ORDER_TYPE_SELL
+        exit_reason = "SL"
+        exit_icon = "🛑"
 
     if action is not None:
         tick = mt5.symbol_info_tick(symbol)
@@ -142,11 +146,9 @@ for symbol in ["EURUSD", "GBPUSD"]:
         if result.retcode == mt5.TRADE_RETCODE_DONE:
             print(f"✅ Trade executed on {symbol} @ {price}")
             last_trade_time[symbol] = datetime.now()
-            close_price = tp  # Simulated
+            close_price = tp
             pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
-            exit_reason = "TP"
             trailing_hit = False
-            exit_icon = "🏁" if exit_reason == "TP" else "❌"
 
             trade = {
                 "timestamp": datetime.now(),
@@ -166,7 +168,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
             }
             log_trade(trade)
             git_push_log()
-            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | Exit: {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}")
+            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | Exit: {exit_reason} {exit_icon}")
         else:
             print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
     else:
