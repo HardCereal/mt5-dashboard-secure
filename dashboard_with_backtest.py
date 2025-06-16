@@ -59,11 +59,10 @@ Trailing stop hit rate
 if "trailing_hit" in df.columns:
 rate = df["trailing_hit"].mean() * 100
 st.metric("🎯 Trailing Stop Hit Rate", f"{rate:.2f}%")
-Exit reason distribution
+Add icons based on exit_reason
+icon_map = {"TP": "🎯", "SL": "🛑", "Trailing": "🔁", "Unknown": "❔"}
 if "exit_reason" in df.columns:
-exit_counts = df["exit_reason"].value_counts()
-st.subheader("📌 Exit Reason Summary")
-st.dataframe(exit_counts.reset_index().rename(columns={"index": "Reason", "exit_reason": "Count"}))
+df["exit_icon"] = df["exit_reason"].map(icon_map).fillna("❔")
 Equity curve
 st.subheader("📈 Equity Curve")
 df["equity"] = df["pnl"].cumsum()
@@ -71,12 +70,15 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["timestamp"], y=df["equity"], mode="lines+markers"))
 fig.update_layout(title="Equity Over Time", xaxis_title="Time", yaxis_title="Equity")
 st.plotly_chart(fig, use_container_width=True)
-Trade log
-st.subheader("📄 Raw Trade Log")
-df_display = df.copy()
-if "exit_reason" in df_display.columns:
-df_display["exit_icon"] = df_display["exit_reason"].apply(lambda x: "🏁" if x == "TP" else ("🛑" if x == "SL" else "🔁"))
-df_display["trailing_icon"] = df_display["trailing_hit"].apply(lambda x: "✅" if x else "❌")
-df_display["exit_summary"] = df_display["exit_icon"] + " " + df_display["exit_reason"] + " | Trailing: " + df_display["trailing_icon"]
-df_display = df_display.drop(columns=["exit_icon", "trailing_icon"])
-st.dataframe(df_display.sort_values("timestamp", ascending=False).reset_index(drop=True))
+Exit Reason Summary
+if "exit_reason" in df.columns:
+st.subheader("📋 Exit Reason Summary")
+summary = df["exit_reason"].value_counts().reset_index()
+summary.columns = ["Exit Reason", "Count"]
+st.dataframe(summary)
+Raw trade log with icons
+st.subheader("📄 Trade Log")
+show_cols = ["timestamp", "symbol", "type", "price", "pnl"]
+if "exit_icon" in df.columns:
+show_cols += ["exit_icon", "exit_reason"]
+st.dataframe(df[show_cols].sort_values("timestamp", ascending=False).reset_index(drop=True))
