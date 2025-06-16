@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─────────────────────────────────────
-# 🔐 Login
-# ─────────────────────────────────────
+# ───────────🔐 AUTH ────────────
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -28,18 +26,13 @@ if not st.session_state.authenticated:
     login()
     st.stop()
 
-# ─────────────────────────────────────
-# 📊 Dashboard Layout
-# ─────────────────────────────────────
+# ──────────📂 LOAD CSV ──────────
 st.set_page_config(page_title="📊 MT5 Dashboard", layout="wide")
 st.title("📈 MT5 Strategy Dashboard")
 
-# ─────────────────────────────────────
-# 📁 Load File
-# ─────────────────────────────────────
 st.sidebar.markdown("### 📂 Select File")
 files = sorted(glob.glob("backtests/*.csv"))
-selected = st.sidebar.selectbox("Backtest File", ["Live"] + files)
+selected = st.sidebar.selectbox("Select Backtest File", ["Live"] + files)
 
 def load_file(path):
     try:
@@ -61,26 +54,28 @@ if df.empty:
     st.warning("No data")
     st.stop()
 
-# ─────────────────────────────────────
-# 📌 Summary Metrics
-# ─────────────────────────────────────
-st.subheader("📊 Summary Metrics")
+# ──────────📊 METRICS ──────────
+st.subheader("📊 Performance Metrics")
 total_pnl = df["pnl"].sum()
 buy_pnl = df[df["type"] == "buy"]["pnl"].sum()
 sell_pnl = df[df["type"] == "sell"]["pnl"].sum()
-
 col1, col2, col3 = st.columns(3)
 col1.metric("Total PnL", f"{total_pnl:.2f}")
 col2.metric("Buy PnL", f"{buy_pnl:.2f}")
 col3.metric("Sell PnL", f"{sell_pnl:.2f}")
 
-if "trailing_hit" in df.columns:
-    trail_rate = df["trailing_hit"].mean() * 100
-    st.metric("🎯 Trailing Stop Hit %", f"{trail_rate:.2f}%")
+# 🧠 Exit reason tracking
+if "exit_reason" in df.columns:
+    reason_counts = df["exit_reason"].value_counts()
+    with st.expander("📌 Exit Reason Summary"):
+        st.dataframe(reason_counts)
 
-# ─────────────────────────────────────
-# 📈 Equity Curve
-# ─────────────────────────────────────
+# 🎯 Trailing stop stats
+if "trailing_hit" in df.columns:
+    hit_rate = df["trailing_hit"].mean() * 100
+    st.metric("🎯 Trailing Stop Hit Rate", f"{hit_rate:.1f}%")
+
+# 📈 Equity curve
 st.subheader("📈 Equity Curve")
 df["equity"] = df["pnl"].cumsum()
 fig = go.Figure()
@@ -88,26 +83,22 @@ fig.add_trace(go.Scatter(x=df["timestamp"], y=df["equity"], mode="lines+markers"
 fig.update_layout(title="Equity Over Time", xaxis_title="Time", yaxis_title="Equity")
 st.plotly_chart(fig, use_container_width=True)
 
-# ─────────────────────────────────────
-# 🧠 Exit Analysis
-# ─────────────────────────────────────
-if "exit_reason" in df.columns:
-    exit_summary = df.groupby("exit_reason")["pnl"].agg(["count", "sum"]).reset_index()
-    st.subheader("🧠 Exit Reason Summary")
-    st.dataframe(exit_summary)
+# 🎯 Exit emoji table
+if "exit_emoji" in df.columns:
+    df["exit_display"] = df["exit_emoji"] + " " + df["exit_reason"]
 
-# ─────────────────────────────────────
-# 📄 Trade Log (With Emoji & Highlights)
-# ─────────────────────────────────────
+# 📄 Raw log
 st.subheader("📄 Raw Trade Log")
+color_map = {
+    "TP": "#d4edda",
+    "SL": "#f8d7da",
+    "Trailing": "#fff3cd"
+}
 
-def highlight_exit(row):
-    if row.get("exit_reason") == "TP":
-        return ["background-color: #d4edda"] * len(row)
-    elif row.get("exit_reason") == "SL":
-        return ["background-color: #f8d7da"] * len(row)
-    elif row.get("exit_reason") == "Trailing":
-        return ["background-color: #ffeeba"] * len(row)
-    return [""] * len(row)
+def highlight_row(row):
+    reason = row.get("exit_reason", "")
+    color = color_map.get(reason, "")
+    return ["background-color: " + color] * len(row)
 
-st.dataframe(df.sort_values("timestamp", ascending=False).style.apply(highlight_exit, axis=1))
+styled = df.sort_values("timestamp", ascending=False).style.apply(highlight_row, axis=1)
+st.dataframe(styled, use_container_width=True)
