@@ -22,11 +22,12 @@ symbol_rsi_threshold = {
 "EURUSD": 40,
 "GBPUSD": 42
 }
-exit_icons = {
+def emoji_for_exit(reason):
+return {
 "TP": "🎯",
 "SL": "🛑",
 "Trailing": "🔁"
-}
+}.get(reason, "❓")
 ──────────────────────────────
 📤 Alert function (Email + Telegram)
 ──────────────────────────────
@@ -61,7 +62,7 @@ df.to_csv(path, mode="a", index=False, header=not os.path.exists(path))
 def log_skipped(symbol, rsi):
 os.makedirs("logs", exist_ok=True)
 path = "logs/skipped_signals.csv"
-record = pd.DataFrame([{"timestamp": datetime.now(), "symbol": symbol, "reason": f"RSI too high: {rsi:.2f}"}])
+record = pd.DataFrame([{ "timestamp": datetime.now(), "symbol": symbol, "reason": f"RSI too high: {rsi:.2f}" }])
 record.to_csv(path, mode="a", index=False, header=not os.path.exists(path))
 ──────────────────────────────
 🔁 Git Auto-Push Function
@@ -165,12 +166,15 @@ for symbol in ["EURUSD", "GBPUSD"]:
                 "close_price": close_price,
                 "pnl": pnl,
                 "exit_reason": exit_reason,
-                "trailing_hit": trailing_hit
+                "trailing_hit": trailing_hit,
+                "exit_emoji": emoji_for_exit(exit_reason)
             }
             log_trade(trade)
             git_push_log()
-            icon = exit_icons.get(exit_reason, "❔")
-            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | Exit: {exit_reason} {icon} | Trailing SL: {'✅' if trailing_hit else '❌'}")
+            send_alert(
+                "Trade Executed",
+                f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {emoji_for_exit(exit_reason)} {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}"
+            )
         else:
             print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
     else:
