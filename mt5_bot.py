@@ -22,6 +22,12 @@ symbol_rsi_threshold = {
 "EURUSD": 40,
 "GBPUSD": 42
 }
+def emoji_for_exit(reason):
+return {
+"TP": "🎯",
+"SL": "🛑",
+"Trailing": "🔁"
+}.get(reason, "❓")
 ──────────────────────────────
 📤 Alert function (Email + Telegram)
 ──────────────────────────────
@@ -56,7 +62,7 @@ df.to_csv(path, mode="a", index=False, header=not os.path.exists(path))
 def log_skipped(symbol, rsi):
 os.makedirs("logs", exist_ok=True)
 path = "logs/skipped_signals.csv"
-record = pd.DataFrame([{"timestamp": datetime.now(), "symbol": symbol, "reason": f"RSI too high: {rsi:.2f}"}])
+record = pd.DataFrame([{ "timestamp": datetime.now(), "symbol": symbol, "reason": f"RSI too high: {rsi:.2f}" }])
 record.to_csv(path, mode="a", index=False, header=not os.path.exists(path))
 ──────────────────────────────
 🔁 Git Auto-Push Function
@@ -115,15 +121,8 @@ for symbol in ["EURUSD", "GBPUSD"]:
     action = None
     if rsi < rsi_threshold and macd > signal and macd_prev < signal_prev and price > sma50:
         action = mt5.ORDER_TYPE_BUY
-        exit_reason = "TP"
-        exit_icon = "🎯"
     elif rsi > 70 and macd < signal and macd_prev > signal_prev and price < sma50:
         action = mt5.ORDER_TYPE_SELL
-        exit_reason = "SL"
-        exit_icon = "🛑"
-    else:
-        exit_reason = None
-        exit_icon = None
 
     if action is not None:
         tick = mt5.symbol_info_tick(symbol)
@@ -151,6 +150,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
             last_trade_time[symbol] = datetime.now()
             close_price = tp  # Simulated
             pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
+            exit_reason = "TP"
             trailing_hit = False
 
             trade = {
@@ -166,12 +166,15 @@ for symbol in ["EURUSD", "GBPUSD"]:
                 "close_price": close_price,
                 "pnl": pnl,
                 "exit_reason": exit_reason,
-                "exit_icon": exit_icon,
-                "trailing_hit": trailing_hit
+                "trailing_hit": trailing_hit,
+                "exit_emoji": emoji_for_exit(exit_reason)
             }
             log_trade(trade)
             git_push_log()
-            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {exit_icon} {exit_reason} | Trailing: {'✅' if trailing_hit else '❌'}")
+            send_alert(
+                "Trade Executed",
+                f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {emoji_for_exit(exit_reason)} {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}"
+            )
         else:
             print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
     else:
