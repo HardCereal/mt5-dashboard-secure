@@ -22,6 +22,9 @@ symbol_rsi_threshold = {
 "EURUSD": 40,
 "GBPUSD": 42
 }
+──────────────────────────────
+📤 Alert function (Email + Telegram)
+──────────────────────────────
 def send_alert(subject, body):
 try:
 msg = EmailMessage()
@@ -42,6 +45,9 @@ data={"chat_id": TELEGRAM_CHAT_ID, "text": body},
 )
 except Exception as e:
 print("Telegram failed:", e)
+──────────────────────────────
+💾 Log trade to CSV
+──────────────────────────────
 def log_trade(trade):
 os.makedirs("trade_logs", exist_ok=True)
 path = "trade_logs/trade_log.csv"
@@ -52,6 +58,9 @@ os.makedirs("logs", exist_ok=True)
 path = "logs/skipped_signals.csv"
 record = pd.DataFrame([{"timestamp": datetime.now(), "symbol": symbol, "reason": f"RSI too high: {rsi:.2f}"}])
 record.to_csv(path, mode="a", index=False, header=not os.path.exists(path))
+──────────────────────────────
+🔁 Git Auto-Push Function
+──────────────────────────────
 def git_push_log():
 os.chdir(GIT_REPO_PATH)
 os.system(f"git config user.email "{GIT_EMAIL}"")
@@ -60,6 +69,9 @@ os.system("git add trade_logs/trade_log.csv")
 msg = f"Auto-log trade at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 os.system(f"git commit -m "{msg}"")
 os.system("git push")
+──────────────────────────────
+🤖 RSI + MACD + SMA Strategy Trading Loop
+──────────────────────────────
 def trade():
 global equity, lowest_equity
 if not mt5.initialize():
@@ -103,8 +115,15 @@ for symbol in ["EURUSD", "GBPUSD"]:
     action = None
     if rsi < rsi_threshold and macd > signal and macd_prev < signal_prev and price > sma50:
         action = mt5.ORDER_TYPE_BUY
+        exit_reason = "TP"
+        exit_icon = "🎯"
     elif rsi > 70 and macd < signal and macd_prev > signal_prev and price < sma50:
         action = mt5.ORDER_TYPE_SELL
+        exit_reason = "SL"
+        exit_icon = "🛑"
+    else:
+        exit_reason = None
+        exit_icon = None
 
     if action is not None:
         tick = mt5.symbol_info_tick(symbol)
@@ -132,10 +151,7 @@ for symbol in ["EURUSD", "GBPUSD"]:
             last_trade_time[symbol] = datetime.now()
             close_price = tp  # Simulated
             pnl = tp - price if action == mt5.ORDER_TYPE_BUY else price - tp
-            exit_reason = "TP"
             trailing_hit = False
-
-            exit_icon = "🎯" if exit_reason == "TP" else ("🛑" if exit_reason == "SL" else "🔄")
 
             trade = {
                 "timestamp": datetime.now(),
@@ -150,12 +166,12 @@ for symbol in ["EURUSD", "GBPUSD"]:
                 "close_price": close_price,
                 "pnl": pnl,
                 "exit_reason": exit_reason,
-                "trailing_hit": trailing_hit,
-                "exit_icon": exit_icon
+                "exit_icon": exit_icon,
+                "trailing_hit": trailing_hit
             }
             log_trade(trade)
             git_push_log()
-            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {exit_icon} {exit_reason} | Trailing SL: {'✅' if trailing_hit else '❌'}")
+            send_alert("Trade Executed", f"{symbol} {'BUY' if action == 0 else 'SELL'} @ {price:.5f} | PnL: {pnl:.2f} | {exit_icon} {exit_reason} | Trailing: {'✅' if trailing_hit else '❌'}")
         else:
             print(f"❌ Trade failed for {symbol}. Error: {result.retcode}")
     else:
