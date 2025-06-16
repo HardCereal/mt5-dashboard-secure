@@ -61,21 +61,22 @@ rate = df["trailing_hit"].mean() * 100
 st.metric("🎯 Trailing Stop Hit Rate", f"{rate:.2f}%")
 Equity curve
 st.subheader("📈 Equity Curve")
+df = df.sort_values("timestamp")
 df["equity"] = df["pnl"].cumsum()
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["timestamp"], y=df["equity"], mode="lines+markers"))
 fig.update_layout(title="Equity Over Time", xaxis_title="Time", yaxis_title="Equity")
 st.plotly_chart(fig, use_container_width=True)
-📋 Exit reason analysis
-st.subheader("🧾 Exit Reason Summary")
-if "exit_reason" in df.columns:
-reason_counts = df["exit_reason"].value_counts()
-st.bar_chart(reason_counts)
-Trade log with icons
-st.subheader("📄 Raw Trade Log")
-if "exit_emoji" in df.columns:
-df["exit_reason_icon"] = df["exit_emoji"] + " " + df["exit_reason"]
-show_cols = ["timestamp", "symbol", "type", "price", "pnl", "exit_reason_icon"]
-st.dataframe(df[show_cols].sort_values("timestamp", ascending=False).reset_index(drop=True))
-else:
-st.dataframe(df.sort_values("timestamp", ascending=False).reset_index(drop=True))
+Exit reason icons
+exit_emoji_map = {"TP": "🎯", "SL": "🛑", "Trailing": "🏃"}
+df["exit_emoji"] = df["exit_reason"].map(exit_emoji_map).fillna("❔")
+df["exit_reason_icon"] = df["exit_emoji"] + " " + df["exit_reason"].fillna("Unknown")
+Grouped by exit reason
+exit_summary = df.groupby("exit_reason_icon")["pnl"].agg(["count", "sum"]).reset_index()
+st.subheader("📌 Trades by Exit Reason")
+st.dataframe(exit_summary.sort_values("sum", ascending=False))
+Trade log with emoji + sorting
+st.subheader("📋 Full Trade Log")
+sort_option = st.selectbox("Sort By", options=["timestamp", "pnl", "exit_reason"], index=0)
+sorted_df = df.sort_values(sort_option, ascending=False).reset_index(drop=True)
+st.dataframe(sorted_df)
